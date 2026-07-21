@@ -1,55 +1,31 @@
-***image_upload_analyzer图生文，origincar_competition巡线+避障，qr_decoder二维码识别***
-***话题发布者和接收者需保持统一***
-***上位机画面卡顿，切换信道等，方法有很多***
-***运行大模型图像识别时，将代码里的API_KEY替换为自己的，不清楚在哪里申请请看视频***
-***编译之前请将库文件中的libalog.so，libhbmem.so，libion.so放到/usr/hobot/lib/目录下在进行编译***
-sudo nmcli device wifi rescan        # 扫描wifi网络
-sudo nmcli device wifi list          # 列出找到的wifi网络
-sudo wifi_connect "************"  "*********"   # 连接某指定的wifi网络
-
-X5 SD卡扩容：
-sudo srpi-config        (6,A1)
-
-X3 SD卡扩容：
-df -h
-growpart /dev/mmcblk2 2
-resize2fs /dev/mmcblk2p2
-df -h
-
-深度相机驱动与图像可视化
-启动相机
-ros2 launch deptrum-ros-driver-aurora930 aurora930_launch.py
-启动rqt_image_view
-ros2 run rqt_image_view rqt_image_view
-
-
-查看芯片工作频率、温度等状态，可通过sudo hrut_somstatus命令查询   **超频请加强散热**
-超频：sudo bash -c 'echo 1 > /sys/devices/system/cpu/cpufreq/boost'
-降频：sudo bash -c 'echo 0 > /sys/devices/system/cpu/cpufreq/boost'
-
-将板载天线转化为外置天线 sed -i 's/trace/cable/g' /etc/init.d/hobot-wifi ，重启后生效。 
-使用以下命令 sed -i 's/cable/trace/g' /etc/init.d/hobot-wifi 重启后进行复原。
-
-colcon build --packages-select <包名>    //单独编译某一功能包
-colcon build							//全部编译
-source install/setup.bash				//重新加载环境变量
-
-***car工作空间文件***
-//一键换源
-wget http://fishros.com/install -O fishros && . fishros
-
-巡线，避障，二维码识别均使用start.launch.py启动
-
-底盘驱动：
-ros2 launch origincar_base origincar_bringup.launch.py			//启动底盘
-
-运动控制
-ros2 launch origincar_competition start.launch.py			//二维码识别均已包含在当前文件里，无需额外启动
-
-上位机：
-ros2 launch rosbridge_server rosbridge_websocket_launch.xml     		//开启上位机端口
-
-图像识别节点：
-ros2 run image_upload_analyzer image_upload_analyzer		//启动图像分析节点
-安装依赖**pip install tos**//**pip install -U volcengine-python-sdk[ark]**
-
+一、参赛信息
+参赛院校：芜湖学院
+车队名称：金乌轮
+参赛组别：智慧医疗组
+二、项目概述
+本作品为第二十一届全国大学生智能汽车竞赛智慧医疗组的参赛项目，由寻迹透光车队完成开发，基于地瓜机器人 RDK 开发板实现整套硬件部署与算法设计。车辆已完成赛事规定的全部基础功能开发，能够稳定完成赛道循线行驶、主动避障、二维码识别，并根据码值判断执行顺时针或逆时针转向行驶。上述所有功能均为赛场实际测试验证通过的落地功能，不含额外拓展功能。
+三、硬件清单
+主控开发板采用地瓜 RDK X5，承担整车主控、图像算法运算与逻辑调度任务；电机驱动模块为配套直流电机驱动，用于控制左右轮电机的启停、转速及正反转；直流减速电机为车载驱动电机，为车辆提供动力输出；视觉摄像头采用车载 USB 摄像头，负责赛道黑线采集、障碍物识别与二维码图像采集；锂电池为车载供电电池，为整车硬件提供持续供电；车架与轮胎采用标准智能车车架，构成整车承载与移动机构。
+四、已实现核心功能说明
+4.1 赛道黑线循线功能
+摄像头实时采集赛道画面，经图像灰度化与阈值分割处理后提取赛道黑色引导线。算法计算黑线相对于车体中心的偏移量，并依据偏移差值动态调整左右轮的转速差。车辆在直道保持匀速行驶，进入弯道时根据曲率自动微调转向角度，从而实现全赛道范围内的稳定循线行驶。
+4.2 赛道主动避障功能
+通过视觉识别赛道内的静态障碍物，完成障碍物轮廓的测距与方位判定。当判定障碍物处于行驶路径内时，车辆小幅减速并横向微调车体以完成避让。待障碍物脱离行驶区域后，车辆修正航向回归原循线轨迹，并恢复原有行驶速度。
+4.3 二维码识别与定向转向功能
+车辆行驶至二维码识别区域后，减速并锁定二维码图像，完成解码识别。若识别到顺时针指令码，车辆执行顺时针环绕转向流程；若识别到逆时针指令码，则执行逆时针环绕转向流程。转向动作完成后，车辆自动回归主赛道黑线，继续循线行驶。
+五、软件架构说明
+图像采集层：调用摄像头接口，持续推送实时画面流。
+图像处理层：完成黑线特征提取、障碍物轮廓检测与二维码解析解码。
+决策控制层：综合图像信息输出转向、调速、避障及定向动作指令。
+底层驱动层：接收上层指令，控制电机驱动完成硬件动作执行。
+六、赛场调试问题与解决方案
+强光环境下黑线识别阈值漂移
+解决方案：引入动态阈值自适应算法，根据环境亮度自动调整二值化参数，确保强光与弱光场景下黑线识别均保持稳定。
+近距离障碍物识别轮廓粘连
+解决方案：优化图像腐蚀与膨胀算子，将障碍物与赛道背景轮廓分离开来，提升近距离避障的识别精度。
+二维码倾斜状态解码失败
+解决方案：增加图像透视矫正预处理环节，对倾斜二维码进行画面校正，提升多角度下的解码成功率。
+七、项目运行环境
+主控系统：地瓜 RDK 配套嵌入式系统
+依赖库：OpenCV 图像库、pyzbar 二维码解析库、串口电机驱动库
+运行方式：上电后自动启动主程序，车辆自主完成全流程赛事动作，无需人工二次干预。
