@@ -1,6 +1,6 @@
 ***image_upload_analyzer图生文，origincar_competition巡线+避障，qr_decoder二维码识别***
 ***话题发布者和接收者需保持统一***
-***上位机画面卡顿，可以更换一个带宽较高的路由器或者增加一个网卡（压缩画质降低码率），切换信道等，方法有很多***
+***上位机画面卡顿，切换信道等，方法有很多***
 ***运行大模型图像识别时，将代码里的API_KEY替换为自己的，不清楚在哪里申请请看视频***
 ***编译之前请将库文件中的libalog.so，libhbmem.so，libion.so放到/usr/hobot/lib/目录下在进行编译***
 sudo nmcli device wifi rescan        # 扫描wifi网络
